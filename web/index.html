@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestor de Contactos</title>
+  <style>
+    body{font-family:sans-serif;max-width:600px;margin:2rem auto}
+    input,button{padding:.5rem;margin:.2rem}
+    table{width:100%;border-collapse:collapse;margin-top:1rem}
+    td,th{border:1px solid #ccc;padding:.4rem;text-align:left}
+  </style>
+</head>
+<body>
+  <h1>Gestor de Contactos</h1>
+  <input id="nombre" placeholder="Nombre">
+  <input id="telefono" placeholder="Teléfono">
+  <button onclick="agregar()">Agregar</button>
+  <table>
+    <thead><tr><th>ID</th><th>Nombre</th><th>Teléfono</th></tr></thead>
+    <tbody id="lista"></tbody>
+  </table>
+  <script>
+    async function cargar() {
+      const r = await fetch("/api/contactos");
+      const datos = await r.json();
+      const tb = document.getElementById("lista");
+      tb.innerHTML = "";
+      datos.forEach(c => {
+        const tr = document.createElement("tr");
+        [c.id, c.nombre, c.telefono].forEach(v => {
+          const td = document.createElement("td");
+          td.textContent = v;
+          tr.appendChild(td);
+        });
+        tb.appendChild(tr);
+      });
+    }
+    async function agregar() {
+      const nombre = document.getElementById("nombre").value;
+      const telefono = document.getElementById("telefono").value;
+      await fetch("/api/contactos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre, telefono })
+      });
+      document.getElementById("nombre").value = "";
+      document.getElementById("telefono").value = "";
+      cargar();
+    }
+    cargar();
+  </script>
+</body>
+</html>

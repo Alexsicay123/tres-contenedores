@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: proyecto_db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      retries: 5
+
+  api:
+    build: ./api
+    container_name: proyecto_api
+    environment:
+      DB_HOST: db
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+    ports: ["3000:3000"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 5s
+      retries: 5
+
+  web:
+    image: nginx:alpine
+    container_name: proyecto_web
+    ports: ["8080:80"]
+    volumes:
+      - ./web/index.html:/usr/share/nginx/html/index.html:ro
+      - ./web/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [frontend, backend]
+
+volumes:
+  pgdata:
+
+networks:
+  frontend:
+  backend:
